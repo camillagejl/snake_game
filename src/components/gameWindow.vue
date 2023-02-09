@@ -1,5 +1,7 @@
 <template>
   <div id="gameWindow">
+    <Points
+    :points="points"></Points>
     <SnakePart
         v-for="(part, index) in snake"
         :key="index"
@@ -20,15 +22,18 @@
 <script>
 import SnakePart from "@/components/snakePart";
 import Apple from "@/components/apple";
+import Points from "@/components/points";
 
 export default {
   name: "gameWindow",
-  components: {Apple, SnakePart},
+  components: {Points, Apple, SnakePart},
   data() {
     return {
       defaultSnakeSize: 15,
       appleSize: 30,
+      speed: 2,
       snakeLength: 100,
+      points: 0,
       animation: '',
       snake: [
         {
@@ -203,38 +208,38 @@ export default {
       if (this.snake.length > 1) {
         //  Growing the front snake
         if (this.snake[0].direction === 'up' || this.snake[0].direction === 'down') {
-          this.snake[0].height = this.snake[0].height + 1
+          this.snake[0].height = this.snake[0].height + this.speed
         }
         if (this.snake[0].direction === 'left' || this.snake[0].direction === 'right') {
-          this.snake[0].width = this.snake[0].width + 1
+          this.snake[0].width = this.snake[0].width + this.speed
         }
 
         // If the direction is up or left, the snake needs to move as well, as it will otherwise grow in the wrong
         // direction.
-        if (this.snake[0].direction === 'up') this.snake[0].top = this.snake[0].top - 1
-        if (this.snake[0].direction === 'left') this.snake[0].left = this.snake[0].left - 1
+        if (this.snake[0].direction === 'up') this.snake[0].top = this.snake[0].top - this.speed
+        if (this.snake[0].direction === 'left') this.snake[0].left = this.snake[0].left - this.speed
 
         // Shrinking the back snake
         if (this.snake[snakeEnd].direction === 'left' || this.snake[snakeEnd].direction === 'right') {
-          this.snake[snakeEnd].width = this.snake[snakeEnd].width - 1
+          this.snake[snakeEnd].width = this.snake[snakeEnd].width - this.speed
         }
         if (this.snake[snakeEnd].direction === 'up' || this.snake[snakeEnd].direction === 'down') {
-          this.snake[snakeEnd].height = this.snake[snakeEnd].height - 1
+          this.snake[snakeEnd].height = this.snake[snakeEnd].height - this.speed
         }
 
         // If the direction is down or right, the snake needs to move as well, as it will otherwise shrink in the wrong
         // direction.
-        if (this.snake[snakeEnd].direction === 'down') this.snake[snakeEnd].top = this.snake[snakeEnd].top + 1
-        if (this.snake[snakeEnd].direction === 'right') this.snake[snakeEnd].left = this.snake[snakeEnd].left + 1
+        if (this.snake[snakeEnd].direction === 'down') this.snake[snakeEnd].top = this.snake[snakeEnd].top + this.speed
+        if (this.snake[snakeEnd].direction === 'right') this.snake[snakeEnd].left = this.snake[snakeEnd].left + this.speed
 
       }
 
       // If there's only one snake part, it will simply move.
       else {
-        if (this.snake[0].direction === 'up') this.snake[0].top = this.snake[0].top - 1
-        if (this.snake[0].direction === 'left') this.snake[0].left = this.snake[0].left - 1
-        if (this.snake[0].direction === 'down') this.snake[0].top = this.snake[0].top + 1
-        if (this.snake[0].direction === 'right') this.snake[0].left = this.snake[0].left + 1
+        if (this.snake[0].direction === 'up') this.snake[0].top = this.snake[0].top - this.speed
+        if (this.snake[0].direction === 'left') this.snake[0].left = this.snake[0].left - this.speed
+        if (this.snake[0].direction === 'down') this.snake[0].top = this.snake[0].top + this.speed
+        if (this.snake[0].direction === 'right') this.snake[0].left = this.snake[0].left + this.speed
       }
 
       let gameWindowPosition = document.querySelector('#gameWindow').getBoundingClientRect();
@@ -272,20 +277,12 @@ export default {
         bottom: this.apple.top + this.appleSize
       }
 
-      console.log(
-          [
-            snakeFront.top + this.defaultSnakeSize > appleArea.top,
-            snakeFront.top < appleArea.bottom,
-            snakeFront.left + this.defaultSnakeSize > appleArea.left,
-            snakeFront.left > appleArea.right
-          ]
-      )
-
       if (snakeFront.top + this.defaultSnakeSize > appleArea.top &&
           snakeFront.top < appleArea.bottom &&
           snakeFront.left + this.defaultSnakeSize > appleArea.left
           && snakeFront.left < appleArea.right) {
-        console.log("pplee!!")
+        this.points = this.points + 10
+        this.createApple();
       }
     },
   }
