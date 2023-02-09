@@ -1,13 +1,10 @@
 <template>
-  Time: {{ time }}
+Game over!
 </template>
 
 <script>
 export default {
-  name: "timer",
-  props: {
-    time: Number
-  }
+  name: "GameOver"
 }
 </script>
 

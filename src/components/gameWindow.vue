@@ -3,13 +3,16 @@
 
     <Menu
         v-if="screen === 'menu'"
-        @playGame="this.screen = 'game'"
+        @playGame="this.startGame"
         @viewHighscore="this.screen = 'highscore'"
+        :gameIsOver="gameIsOver"
+        :points="points"
     ></Menu>
 
     <HighscoreList
         v-if="screen === 'highscore'"
         @viewMenu="this.screen = 'menu'"
+        :highScore="highScore"
     ></HighscoreList>
 
     <div
@@ -30,7 +33,6 @@
           class="snake_part"
           :id="'snake_part_' + index"
       ></SnakePart>
-
       <Apple
           :style="'position: absolute; top: ' + apple.top + '; left: ' + apple.left"
       ></Apple>
@@ -52,9 +54,11 @@ export default {
   data() {
     return {
       screen: 'menu',
+      playerName: '',
+      gameIsOver: false,
       defaultSnakeSize: 15,
       appleSize: 30,
-      speed: 2,
+      speed: 5,
       snakeLength: 100,
       points: 0,
       timer: false,
@@ -135,6 +139,56 @@ export default {
             }
           ]
         }
+      ],
+      highScore: [
+        {
+          name: 'Troels',
+          points: 200
+        },
+        {
+          name: 'Camilla',
+          points: 120
+        },
+        {
+          name: 'Bitten',
+          points: 10090
+        },
+        {
+          name: 'Troels',
+          points: 200
+        },
+        {
+          name: 'Camilla',
+          points: 120
+        },
+        {
+          name: 'Bitten',
+          points: 10090
+        },
+        {
+          name: 'Troels',
+          points: 200
+        },
+        {
+          name: 'Camilla',
+          points: 120
+        },
+        {
+          name: 'Bitten',
+          points: 10090
+        },
+        {
+          name: 'Troels',
+          points: 200
+        },
+        {
+          name: 'Camilla',
+          points: 120
+        },
+        {
+          name: 'Bitten',
+          points: 10090
+        }
       ]
     }
   },
@@ -157,6 +211,10 @@ export default {
     this.createApple();
   },
   methods: {
+    startGame(name) {
+      this.screen = 'game';
+      this.playerName = name
+    },
     createPart(direction) {
       // The new part will be added with the standard size (i.e. it starts out a ball)
       let newPart = {
@@ -289,8 +347,8 @@ export default {
       let appleArea = {
         top: this.apple.top,
         left: this.apple.left,
+        bottom: this.apple.top + this.appleSize,
         right: this.apple.left + this.appleSize,
-        bottom: this.apple.top + this.appleSize
       }
 
       if (snakeFront.top + this.defaultSnakeSize > appleArea.top &&
@@ -302,11 +360,61 @@ export default {
         this.createApple();
       }
 
+      // Detect collisio with snake
+      this.snake.forEach(part => {
+        let snakeArea = {
+          top: part.top,
+          left: part.left,
+          bottom: part.top + part.height,
+          right: part.left + part.width
+        }
+
+        if (snakeFront.top  > snakeArea.top &&
+            snakeFront.top < snakeArea.bottom &&
+            snakeFront.left  > snakeArea.left &&
+            snakeFront.left < snakeArea.right
+        ) {
+          this.gameOver();
+        }
+
+      })
+
       // Detect collision with borders
-      if (snakeFront.top <= 0 || snakeFront.left <= 0) {
-        cancelAnimationFrame(this.animation)
+      if (snakeFront.top <= 0 || snakeFront.left <= 0 ||
+          snakeFront.top >= 750 || snakeFront.left >= 750
+      ) {
+        this.gameOver();
       }
     },
+    gameOver() {
+      cancelAnimationFrame(this.animation)
+
+      // Creates score for score board
+      let score = {
+        name: this.playerName,
+        points: this.points
+      }
+
+      // Shows the menu, now with game over text
+      this.gameIsOver = true;
+      this.highScore.push(score)
+      this.screen = 'menu'
+
+      // Resets the game to starting point
+      this.snake = [
+        {
+          top: 100,
+          left: 100,
+          direction: 'right',
+          height: 15,
+          width: 100
+        }
+      ]
+      this.points = 0;
+      this.time = 0;
+      this.timer = false;
+
+    }
   }
 }
 </script>
