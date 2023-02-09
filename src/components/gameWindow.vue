@@ -1,21 +1,40 @@
 <template>
   <div id="gameWindow">
-    <Points
-    :points="points"></Points>
-    <SnakePart
-        v-for="(part, index) in snake"
-        :key="index"
-        :defaultSize="defaultSnakeSize"
-        :snakeProps="part"
-        :style="'position: absolute; top: ' + part.top + '; left: ' + part.left"
-        class="snake_part"
-        :id="'snake_part_' + index"
-    ></SnakePart>
 
-    <Apple
-        :style="'position: absolute; top: ' + apple.top + '; left: ' + apple.left"
-    ></Apple>
+    <Menu
+        v-if="screen === 'menu'"
+        @playGame="this.screen = 'game'"
+        @viewHighscore="this.screen = 'highscore'"
+    ></Menu>
 
+    <HighscoreList
+        v-if="screen === 'highscore'"
+        @viewMenu="this.screen = 'menu'"
+    ></HighscoreList>
+
+    <div
+        class="game"
+        v-if="screen === 'game'"
+    >
+      <Timer
+          :time="time"
+      ></Timer>
+      <Points
+          :points="points"></Points>
+      <SnakePart
+          v-for="(part, index) in snake"
+          :key="index"
+          :defaultSize="defaultSnakeSize"
+          :snakeProps="part"
+          :style="'position: absolute; top: ' + part.top + '; left: ' + part.left"
+          class="snake_part"
+          :id="'snake_part_' + index"
+      ></SnakePart>
+
+      <Apple
+          :style="'position: absolute; top: ' + apple.top + '; left: ' + apple.left"
+      ></Apple>
+    </div>
   </div>
 </template>
 
@@ -23,17 +42,23 @@
 import SnakePart from "@/components/snakePart";
 import Apple from "@/components/apple";
 import Points from "@/components/points";
+import Timer from "@/components/timer";
+import Menu from "@/components/menu";
+import HighscoreList from "@/components/highscoreList";
 
 export default {
   name: "gameWindow",
-  components: {Points, Apple, SnakePart},
+  components: {HighscoreList, Menu, Timer, Points, Apple, SnakePart},
   data() {
     return {
+      screen: 'menu',
       defaultSnakeSize: 15,
       appleSize: 30,
       speed: 2,
       snakeLength: 100,
       points: 0,
+      timer: false,
+      time: 0,
       animation: '',
       snake: [
         {
@@ -133,7 +158,6 @@ export default {
   },
   methods: {
     createPart(direction) {
-
       // The new part will be added with the standard size (i.e. it starts out a ball)
       let newPart = {
         top: 100,
@@ -188,16 +212,13 @@ export default {
         left: Math.floor(Math.random() * 720)
       }
 
-
-      let appleArea = document.querySelector('.apple').getBoundingClientRect();
-      console.log(appleArea)
-
     },
     changeDirection(direction) {
       this.createPart(direction)
     },
     animate() {
       this.animation = requestAnimationFrame(this.animate)
+
       const snakeEnd = this.snake.length - 1;
 
       if (this.snake[snakeEnd].width <= 15 && this.snake[snakeEnd].height <= 15) {
@@ -242,14 +263,8 @@ export default {
         if (this.snake[0].direction === 'right') this.snake[0].left = this.snake[0].left + this.speed
       }
 
+      // Collision detection
       let gameWindowPosition = document.querySelector('#gameWindow').getBoundingClientRect();
-
-      // let snakeFront = '';
-      // if (this.snake[0].direction === 'up') snakeFront = 'top';
-      // if (this.snake[0].direction === 'left') snakeFront = 'left';
-      // if (this.snake[0].direction === 'down') snakeFront = 'bottom';
-      // if (this.snake[0].direction === 'right') snakeFront = 'right';
-
       let frontSnakeArea = document.querySelector('#snake_part_0').getBoundingClientRect();
 
       let snakeFront = {top: 0, left: 0};
@@ -270,6 +285,7 @@ export default {
         left: snakeFront.left - gameWindowPosition.left - 5
       }
 
+      // Detect collision with apple
       let appleArea = {
         top: this.apple.top,
         left: this.apple.left,
@@ -279,10 +295,16 @@ export default {
 
       if (snakeFront.top + this.defaultSnakeSize > appleArea.top &&
           snakeFront.top < appleArea.bottom &&
-          snakeFront.left + this.defaultSnakeSize > appleArea.left
-          && snakeFront.left < appleArea.right) {
+          snakeFront.left + this.defaultSnakeSize > appleArea.left &&
+          snakeFront.left < appleArea.right
+      ) {
         this.points = this.points + 10
         this.createApple();
+      }
+
+      // Detect collision with borders
+      if (snakeFront.top <= 0 || snakeFront.left <= 0) {
+        cancelAnimationFrame(this.animation)
       }
     },
   }

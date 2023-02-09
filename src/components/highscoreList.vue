@@ -1,5 +1,6 @@
 <template>
-
+Highscore
+  <button @click="this.$emit('viewMenu')">Back to menu</button>
 </template>
 
 <script>

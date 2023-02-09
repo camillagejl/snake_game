@@ -1,10 +1,13 @@
 <template>
-
+  Time: {{ time }}
 </template>
 
 <script>
 export default {
-  name: "timer"
+  name: "timer",
+  props: {
+    time: String
+  }
 }
 </script>
 
