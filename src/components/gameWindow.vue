@@ -139,7 +139,7 @@ export default {
               let gameWindowPosition = document.querySelector('#gameWindow').getBoundingClientRect();
               let currenSnakePosition = document.querySelector('#snake_part_0').getBoundingClientRect();
 
-              // The arrows array contains information about where to place the new partdepending on direction.
+              // The arrows array contains information about where to place the new part depending on direction.
               newPart.top = currenSnakePosition[positionNewSnake.top] - gameWindowPosition.top - 5;
               newPart.left = currenSnakePosition[positionNewSnake.left] - gameWindowPosition.left - 5;
 
@@ -151,7 +151,6 @@ export default {
               if (positionNewSnake.left === 'right') {
                 newPart.left = newPart.left - this.defaultSnakeSize
               }
-
 
               // Adds new part to the beginning of the Snake array, so the current nake in front will always be at [0].
               this.snake.unshift(newPart);
@@ -175,7 +174,7 @@ export default {
 
       const snakeEnd = this.snake.length - 1;
 
-      if (this.snake[snakeEnd].width === 0 || this.snake[snakeEnd].height === 0) {
+      if (this.snake[snakeEnd].width <= 15 && this.snake[snakeEnd].height <= 15) {
         this.snake.pop();
       }
 
