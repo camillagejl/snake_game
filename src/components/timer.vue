@@ -1,5 +1,7 @@
 <template>
-  Time: {{ time }}
+  <div>
+    Time: {{ time }}
+  </div>
 </template>
 
 <script>

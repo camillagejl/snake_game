@@ -7,6 +7,7 @@
         @viewHighscore="this.screen = 'highscore'"
         :gameIsOver="gameIsOver"
         :points="points"
+        :time="time"
     ></Menu>
 
     <HighscoreList
@@ -19,11 +20,16 @@
         class="game"
         v-if="screen === 'game'"
     >
-      <Timer
-          :time="time"
-      ></Timer>
-      <Points
-          :points="points"></Points>
+      <div class="gameInfo">
+        <Timer
+            :time="time"
+        ></Timer>
+
+        <Points
+            :points="points"
+        ></Points>
+      </div>
+
       <SnakePart
           v-for="(part, index) in snake"
           :key="index"
@@ -33,10 +39,12 @@
           class="snake_part"
           :id="'snake_part_' + index"
       ></SnakePart>
+
       <Apple
           :style="'position: absolute; top: ' + apple.top + '; left: ' + apple.left"
       ></Apple>
     </div>
+
   </div>
 </template>
 
@@ -152,70 +160,80 @@ export default {
         {
           name: 'Bitten',
           points: 10090
-        },
-        {
-          name: 'Troels',
-          points: 200
-        },
-        {
-          name: 'Camilla',
-          points: 120
-        },
-        {
-          name: 'Bitten',
-          points: 10090
-        },
-        {
-          name: 'Troels',
-          points: 200
-        },
-        {
-          name: 'Camilla',
-          points: 120
-        },
-        {
-          name: 'Bitten',
-          points: 10090
-        },
-        {
-          name: 'Troels',
-          points: 200
-        },
-        {
-          name: 'Camilla',
-          points: 120
-        },
-        {
-          name: 'Bitten',
-          points: 10090
         }
       ]
     }
   },
   mounted() {
+
     // Listening for key presses, and reacts if it's an arrow/WASD.
     document.addEventListener('keydown', (event) => {
-      if (event.key === ' ') {
-        cancelAnimationFrame(this.animation);
-      }
-
       this.arrows.forEach(arrow => {
         arrow.keys.forEach(arrowKey => {
           if (event.key === arrowKey) {
+
+            // Changes the direction depending on the new direction.
             this.changeDirection(arrow.direction)
           }
         })
       })
+
+      // Set space key to pause animation for testing
+      // if (event.key === ' ') {
+      //   cancelAnimationFrame(this.animation);
+      // }
     })
-    this.createPart();
+
+    // Creates initial apple
     this.createApple();
   },
   methods: {
     startGame(name) {
       this.screen = 'game';
+
+      // Resets game to starting point
+      this.snake = [
+        {
+          top: 100,
+          left: 100,
+          direction: 'right',
+          height: 15,
+          width: 100
+        }
+      ]
+      this.timer = false;
+      this.points = 0;
+      this.time = 0;
       this.playerName = name
     },
-    createPart(direction) {
+
+    changeDirection(direction) {
+      // Compares the key pressed to the arrows array.
+      this.arrows.forEach(arrow => {
+        if (arrow.direction === direction) {
+
+          // Checks on the arrow whether the new direction is compatible with the previous direction.
+          arrow.positionNewSnake.forEach(positionNewSnake => {
+            if (this.snake[0].direction === positionNewSnake.previousDirection) {
+
+              // The first time the snake starts moving, the timer will start
+              if (!this.timer) this.startTimer();
+
+              // Creates the new part, that will now be the front.
+              this.createPart(arrow.direction, positionNewSnake);
+
+              // Cancels the current animation, so the current/previous front of the snake won't move/grow.
+              cancelAnimationFrame(this.animation)
+
+              // Starts growing the new snake front
+              this.animate();
+            }
+          })
+        }
+      })
+    },
+
+    createPart(direction, positionNewSnake) {
       // The new part will be added with the standard size (i.e. it starts out a ball)
       let newPart = {
         top: 100,
@@ -225,106 +243,109 @@ export default {
         width: this.defaultSnakeSize
       };
 
-      // Finds the right arrow/direction, then compares to the previous direction of the snake to see if it should be
-      // able to mov in the new direction.
-      this.arrows.forEach(arrow => {
-        if (arrow.direction === direction)
-          arrow.positionNewSnake.forEach(positionNewSnake => {
-            // Checks if the old direction is in the array of the new direction's 'previous directions', where it
-            // should work.
-            if (this.snake[0].direction === positionNewSnake.previousDirection) {
+      // Finds the absolute position of the current front of the snake, so a new part can be added to this
+      // place. the gameWindow is needed to subtract the margins.
+      let gameWindowPosition = document.querySelector('#gameWindow').getBoundingClientRect();
+      let currentSnakePosition = document.querySelector('#snake_part_0').getBoundingClientRect();
 
-              // Finds the absolute position of the current front of the snake, so a new part can be added to this
-              // place.
-              let gameWindowPosition = document.querySelector('#gameWindow').getBoundingClientRect();
-              let currenSnakePosition = document.querySelector('#snake_part_0').getBoundingClientRect();
+      // The arrows array contains information about where to place the new part depending on direction.
+      newPart.top = currentSnakePosition[positionNewSnake.top] - gameWindowPosition.top - 5;
+      newPart.left = currentSnakePosition[positionNewSnake.left] - gameWindowPosition.left - 5;
 
-              // The arrows array contains information about where to place the new part depending on direction.
-              newPart.top = currenSnakePosition[positionNewSnake.top] - gameWindowPosition.top - 5;
-              newPart.left = currenSnakePosition[positionNewSnake.left] - gameWindowPosition.left - 5;
-
-              // If the new part is placed at the bottom or the right of the previous part, it will be places next to it
-              // instead of on top of it. To avoid this, we retract the snake's default width from the position.
-              if (positionNewSnake.top === 'bottom') {
-                newPart.top = newPart.top - this.defaultSnakeSize
-              }
-              if (positionNewSnake.left === 'right') {
-                newPart.left = newPart.left - this.defaultSnakeSize
-              }
-
-              // Adds new part to the beginning of the Snake array, so the current nake in front will always be at [0].
-              this.snake.unshift(newPart);
-
-              // Cancels the current animation, so the current front of the snake won't move/grow.
-              cancelAnimationFrame(this.animation)
-
-              // Starts growing the new snake front
-              this.animate();
-            }
-          })
-      })
-    },
-    createApple() {
-      this.apple = {
-        top: Math.floor(Math.random() * 720),
-        left: Math.floor(Math.random() * 720)
+      // If the new part is placed at the bottom or the right of the previous part, it will be places next to it
+      // instead of on top of it. To avoid this, we retract the snake's default width from the position.
+      if (positionNewSnake.top === 'bottom') {
+        newPart.top -= this.defaultSnakeSize
+      }
+      if (positionNewSnake.left === 'right') {
+        newPart.left -= this.defaultSnakeSize
       }
 
+      // Adds new part to the beginning of the Snake array, so the snake currently in front will always be at [0].
+      this.snake.unshift(newPart);
     },
-    changeDirection(direction) {
-      this.createPart(direction)
+
+    startTimer() {
+      this.timer = window.setInterval(() => {
+        this.time += 1
+        console.log(this.time)
+      }, 1000)
     },
+
+    createApple() {
+      // Positions apple somewhere in the game, retracting apple size so it doesn't go outside right and bottom borders.
+      this.apple = {
+        top: Math.floor(Math.random() * (750 - this.appleSize)),
+        left: Math.floor(Math.random() * (750 - this.appleSize))
+      }
+    },
+
     animate() {
       this.animation = requestAnimationFrame(this.animate)
 
-      const snakeEnd = this.snake.length - 1;
+      // snakeEnd is the back end of the snake, last in the array..
+      let snakeEnd = this.snake.length - 1;
 
-      if (this.snake[snakeEnd].width <= 15 && this.snake[snakeEnd].height <= 15) {
+      // If the end of the snake is back to default size, it should disappear so the next part can animate.
+      if (this.snake[snakeEnd].width <= this.defaultSnakeSize && this.snake[snakeEnd].height <= this.defaultSnakeSize) {
         this.snake.pop();
       }
 
+      // Updates snakeEnd in case the end was popped but there's still more than one part in the array.
+      snakeEnd = this.snake.length - 1;
+
       // If there's more than one snake part, the front part should grow and the back part should shrink.
-      if (this.snake.length > 1) {
-        //  Growing the front snake
-        if (this.snake[0].direction === 'up' || this.snake[0].direction === 'down') {
-          this.snake[0].height = this.snake[0].height + this.speed
-        }
-        if (this.snake[0].direction === 'left' || this.snake[0].direction === 'right') {
-          this.snake[0].width = this.snake[0].width + this.speed
-        }
-
-        // If the direction is up or left, the snake needs to move as well, as it will otherwise grow in the wrong
-        // direction.
-        if (this.snake[0].direction === 'up') this.snake[0].top = this.snake[0].top - this.speed
-        if (this.snake[0].direction === 'left') this.snake[0].left = this.snake[0].left - this.speed
-
-        // Shrinking the back snake
-        if (this.snake[snakeEnd].direction === 'left' || this.snake[snakeEnd].direction === 'right') {
-          this.snake[snakeEnd].width = this.snake[snakeEnd].width - this.speed
-        }
-        if (this.snake[snakeEnd].direction === 'up' || this.snake[snakeEnd].direction === 'down') {
-          this.snake[snakeEnd].height = this.snake[snakeEnd].height - this.speed
-        }
-
-        // If the direction is down or right, the snake needs to move as well, as it will otherwise shrink in the wrong
-        // direction.
-        if (this.snake[snakeEnd].direction === 'down') this.snake[snakeEnd].top = this.snake[snakeEnd].top + this.speed
-        if (this.snake[snakeEnd].direction === 'right') this.snake[snakeEnd].left = this.snake[snakeEnd].left + this.speed
-
-      }
+      if (this.snake.length > 1) this.moveMultipleParts(snakeEnd)
 
       // If there's only one snake part, it will simply move.
-      else {
-        if (this.snake[0].direction === 'up') this.snake[0].top = this.snake[0].top - this.speed
-        if (this.snake[0].direction === 'left') this.snake[0].left = this.snake[0].left - this.speed
-        if (this.snake[0].direction === 'down') this.snake[0].top = this.snake[0].top + this.speed
-        if (this.snake[0].direction === 'right') this.snake[0].left = this.snake[0].left + this.speed
-      }
+      else this.moveSinglePart();
 
       // Collision detection
+      this.collisionDetection()
+
+    },
+
+    moveMultipleParts(snakeEnd) {
+      //  Growing the front snake
+      if (this.snake[0].direction === 'up' || this.snake[0].direction === 'down') {
+        this.snake[0].height += this.speed
+      }
+      if (this.snake[0].direction === 'left' || this.snake[0].direction === 'right') {
+        this.snake[0].width += this.speed
+      }
+
+      // If the direction is up or left, the snake needs to move as well, as it will otherwise grow in the wrong
+      // direction.
+      if (this.snake[0].direction === 'up') this.snake[0].top -= this.speed
+      if (this.snake[0].direction === 'left') this.snake[0].left -= this.speed
+
+      // Shrinking the back snake
+      if (this.snake[snakeEnd].direction === 'left' || this.snake[snakeEnd].direction === 'right') {
+        this.snake[snakeEnd].width -= this.speed
+      }
+      if (this.snake[snakeEnd].direction === 'up' || this.snake[snakeEnd].direction === 'down') {
+        this.snake[snakeEnd].height -= this.speed
+      }
+
+      // If the direction is down or right, the snake needs to move as well, as it will otherwise shrink in the wrong
+      // direction.
+      if (this.snake[snakeEnd].direction === 'down') this.snake[snakeEnd].top += this.speed
+      if (this.snake[snakeEnd].direction === 'right') this.snake[snakeEnd].left += this.speed
+    },
+
+    moveSinglePart() {
+
+      if (this.snake[0].direction === 'up') this.snake[0].top -= this.speed
+      if (this.snake[0].direction === 'left') this.snake[0].left -= this.speed
+      if (this.snake[0].direction === 'down') this.snake[0].top += this.speed
+      if (this.snake[0].direction === 'right') this.snake[0].left += this.speed
+    },
+
+    collisionDetection() {
       let gameWindowPosition = document.querySelector('#gameWindow').getBoundingClientRect();
       let frontSnakeArea = document.querySelector('#snake_part_0').getBoundingClientRect();
 
+      // Define where the moving front part of the snake is, as this is what can collide.
       let snakeFront = {top: 0, left: 0};
       if (this.snake[0].direction === 'up' || this.snake[0].direction === 'left') {
         snakeFront = {top: frontSnakeArea.top, left: frontSnakeArea.left}
@@ -344,6 +365,19 @@ export default {
       }
 
       // Detect collision with apple
+      this.appleDetection(snakeFront);
+
+      let gameOver = false;
+      // Detect collision with snake
+      if (this.snakeDetection(snakeFront) === 'gameOver') gameOver = true;
+
+      // Detect collision with borders
+      if (this.wallDetection(snakeFront) === 'gameOver') gameOver = true;
+
+      if (gameOver) this.gameOver();
+    },
+
+    appleDetection(snakeFront) {
       let appleArea = {
         top: this.apple.top,
         left: this.apple.left,
@@ -359,8 +393,18 @@ export default {
         this.points = this.points + 10
         this.createApple();
       }
+    },
 
-      // Detect collisio with snake
+    wallDetection(snakeFront) {
+      if (snakeFront.top <= 0 || snakeFront.left <= 0 ||
+          snakeFront.top >= 750 || snakeFront.left >= 750
+      ) {
+        return'gameOver';
+      }
+      return '';
+    },
+
+    snakeDetection(snakeFront) {
       this.snake.forEach(part => {
         let snakeArea = {
           top: part.top,
@@ -369,23 +413,17 @@ export default {
           right: part.left + part.width
         }
 
-        if (snakeFront.top  > snakeArea.top &&
+        if (snakeFront.top > snakeArea.top &&
             snakeFront.top < snakeArea.bottom &&
-            snakeFront.left  > snakeArea.left &&
+            snakeFront.left > snakeArea.left &&
             snakeFront.left < snakeArea.right
         ) {
-          this.gameOver();
+          return 'gameOver';
         }
-
       })
-
-      // Detect collision with borders
-      if (snakeFront.top <= 0 || snakeFront.left <= 0 ||
-          snakeFront.top >= 750 || snakeFront.left >= 750
-      ) {
-        this.gameOver();
-      }
+      return '';
     },
+
     gameOver() {
       cancelAnimationFrame(this.animation)
 
@@ -399,21 +437,7 @@ export default {
       this.gameIsOver = true;
       this.highScore.push(score)
       this.screen = 'menu'
-
-      // Resets the game to starting point
-      this.snake = [
-        {
-          top: 100,
-          left: 100,
-          direction: 'right',
-          height: 15,
-          width: 100
-        }
-      ]
-      this.points = 0;
-      this.time = 0;
-      this.timer = false;
-
+      window.clearInterval(this.timer)
     }
   }
 }
@@ -426,4 +450,11 @@ export default {
   width: 750px;
   position: relative;
 }
+
+.gameInfo {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+}
+
 </style>

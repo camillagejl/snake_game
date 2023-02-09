@@ -1,5 +1,7 @@
 <template>
-  {{ points }} points
+  <div>
+    {{ points }} points
+  </div>
 </template>
 
 <script>
