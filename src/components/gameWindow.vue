@@ -9,18 +9,25 @@
         class="snake_part"
         :id="'snake_part_' + index"
     ></SnakePart>
+
+    <Apple
+        :style="'position: absolute; top: ' + apple.top + '; left: ' + apple.left"
+    ></Apple>
+
   </div>
 </template>
 
 <script>
 import SnakePart from "@/components/snakePart";
+import Apple from "@/components/apple";
 
 export default {
   name: "gameWindow",
-  components: {SnakePart},
+  components: {Apple, SnakePart},
   data() {
     return {
       defaultSnakeSize: 15,
+      appleSize: 30,
       snakeLength: 100,
       animation: '',
       snake: [
@@ -32,6 +39,7 @@ export default {
           width: 100
         }
       ],
+      apple: {},
       arrows: [
         {
           direction: 'up',
@@ -103,6 +111,10 @@ export default {
   mounted() {
     // Listening for key presses, and reacts if it's an arrow/WASD.
     document.addEventListener('keydown', (event) => {
+      if (event.key === ' ') {
+        cancelAnimationFrame(this.animation);
+      }
+
       this.arrows.forEach(arrow => {
         arrow.keys.forEach(arrowKey => {
           if (event.key === arrowKey) {
@@ -112,6 +124,7 @@ export default {
       })
     })
     this.createPart();
+    this.createApple();
   },
   methods: {
     createPart(direction) {
@@ -164,14 +177,22 @@ export default {
           })
       })
     },
+    createApple() {
+      this.apple = {
+        top: Math.floor(Math.random() * 720),
+        left: Math.floor(Math.random() * 720)
+      }
+
+
+      let appleArea = document.querySelector('.apple').getBoundingClientRect();
+      console.log(appleArea)
+
+    },
     changeDirection(direction) {
       this.createPart(direction)
     },
     animate() {
       this.animation = requestAnimationFrame(this.animate)
-
-      console.log("animating")
-
       const snakeEnd = this.snake.length - 1;
 
       if (this.snake[snakeEnd].width <= 15 && this.snake[snakeEnd].height <= 15) {
@@ -216,10 +237,56 @@ export default {
         if (this.snake[0].direction === 'right') this.snake[0].left = this.snake[0].left + 1
       }
 
-      // if (direction === 'top') this.snake[0].top = this.snake[0].top - 1
-      // if (direction === 'left') this.snake[0].left = this.snake[0].left - 1
-      // if (direction === 'down') this.snake[0].top = this.snake[0].top + 1
-      // if (direction === 'right') this.snake[0].left = this.snake[0].left + 1
+      let gameWindowPosition = document.querySelector('#gameWindow').getBoundingClientRect();
+
+      // let snakeFront = '';
+      // if (this.snake[0].direction === 'up') snakeFront = 'top';
+      // if (this.snake[0].direction === 'left') snakeFront = 'left';
+      // if (this.snake[0].direction === 'down') snakeFront = 'bottom';
+      // if (this.snake[0].direction === 'right') snakeFront = 'right';
+
+      let frontSnakeArea = document.querySelector('#snake_part_0').getBoundingClientRect();
+
+      let snakeFront = {top: 0, left: 0};
+      if (this.snake[0].direction === 'up' || this.snake[0].direction === 'left') {
+        snakeFront = {top: frontSnakeArea.top, left: frontSnakeArea.left}
+      }
+
+      if (this.snake[0].direction === 'down') {
+        snakeFront = {top: frontSnakeArea.top + frontSnakeArea.height, left: frontSnakeArea.left}
+      }
+
+      if (this.snake[0].direction === 'right') {
+        snakeFront = {top: frontSnakeArea.top, left: frontSnakeArea.left + frontSnakeArea.width}
+      }
+
+      snakeFront = {
+        top: snakeFront.top - gameWindowPosition.top - 5,
+        left: snakeFront.left - gameWindowPosition.left - 5
+      }
+
+      let appleArea = {
+        top: this.apple.top,
+        left: this.apple.left,
+        right: this.apple.left + this.appleSize,
+        bottom: this.apple.top + this.appleSize
+      }
+
+      console.log(
+          [
+            snakeFront.top + this.defaultSnakeSize > appleArea.top,
+            snakeFront.top < appleArea.bottom,
+            snakeFront.left + this.defaultSnakeSize > appleArea.left,
+            snakeFront.left > appleArea.right
+          ]
+      )
+
+      if (snakeFront.top + this.defaultSnakeSize > appleArea.top &&
+          snakeFront.top < appleArea.bottom &&
+          snakeFront.left + this.defaultSnakeSize > appleArea.left
+          && snakeFront.left < appleArea.right) {
+        console.log("pplee!!")
+      }
     },
   }
 }
